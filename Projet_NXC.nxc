@@ -1,0 +1,451 @@
+#define BT_CONN 1       //Macros qui definissent le numéro de la connexion reliant les deux briques.
+
+unsigned long A=0,B=0,C=0,tab2[400], n=0, e=0 ;
+
+sub BTCheck(int conn)
+{                                           //Subroutine qui vérifie qu'il y a bien connection entre les deux
+    if (!BluetoothStatus(conn)==NO_ERR)     //briques et qui renvoit un message d'erreur et arrète le programme dans le cas contraire.
+    {                                       //sub a la même valeur que void, il indique que la fonction ne renvoit rien.
+       TextOut(5,LCD_LINE2,"Error");
+       Wait(1000);
+       Stop(true);
+    }
+}
+
+
+void Affichage(string lettre, long chiffre, unsigned long x1, unsigned long y1, unsigned long x2  ,  unsigned long y2, unsigned long time )
+{
+    TextOut(x1, y1, lettre);             //Fonction d'affichage d'un texte puis
+    NumOut(x2, y2, chiffre);             //d'une variable avec divers paramètres d'affichage.
+    Wait(time);
+}
+
+
+int tableauAscii(int nb, int col,int value)   //Fonction qui affiche un caractère et sa correpondance en ASCII
+{                                             //en fonction du nombre de tours réalisés par le moteur moteur.
+   int motorX;
+   string  Xstr;
+   byte motorType;
+   if (value==0)                             //Si value=0, premiere fois que l'on rentre un nombre donc on s'interesse au  moteur A.
+   {
+      motorType=OUT_A;
+   }
+   else if (value==1)                        //Si value=1, deuxieme fois que l'on rentre un nombre donc on s'interesse au  moteur B.
+   {
+      motorType=OUT_B;
+   }
+   else                                      //Si value=2, troisieme fois que l'on rentre un nombre donc on s'interesse au  moteur C.
+   {
+     motorType=OUT_C;
+   }
+
+   motorX = (MotorTachoCount(motorType)/30)+nb;   //-MotorX prend le nombre de tours réalisés par le moteur precisé plus haut (ex:900),
+   Xstr =  Flatten(motorX);                     //le divise par 30 (900/30=30) pour faciliter la navigation dans la table ascii et lui rajoute nb (ex: nb=19 donc 30+18=49) qui
+                                              //est un décalage pour afficher les nombre à partir d'un certain rang.
+   TextOut(14,51,"ASCII" );
+   NumOut(19, col,motorX);                      //-On affiche Xstr qui correspond à la valeur choisie pour fermer le coffre. Elle est la
+                                              //correspondance en ASCII de la valeur prise par motorX (ex: ici motorx vaut 49 or la correspondance qui s'affiche à l'écran de 49 dans la table ASCII est 1.
+   TextOut(54,51,"Coffre");                    //Le chiffre 1 est un des codes du coffre.
+   TextOut(70,col,Xstr);
+
+   RectOut(0, 0, 99, 63);                       //Les instructions suivantes fabriquent le tableau.
+
+   RectOut(0, 36, 99, 12);
+   RectOut(0, 12, 99, 12);
+   LineOut(49, 0, 49, 63);
+
+   CircleOut(10, 42, 1);
+   CircleOut(10, 42, 2);
+
+   return motorX;                                //On retourne la derniere valeur prise par la variable motorX(ici 48).
+
+}
+
+int tableauPremier(int nb,int col, int lig,  int value)
+{
+   int motorX, Xint;
+   byte motorType;
+   if (value==0)
+   {
+      motorType=OUT_A;
+   }
+   else
+   {                                                             //Même principe que tableauAscii sauf que le tableau formé est ici rempli de nombre premier.
+      motorType=OUT_B;
+   }
+
+
+   motorX = (MotorTachoCount(motorType)/30)+nb;
+   
+   if (motorX>=0)
+   {
+       Xint=tab2[motorX];
+       TextOut(10,51,"Nombre premier");
+       NumOut(col,lig,Xint);
+       RectOut(0, 0, 99, 63);
+
+       RectOut(0, 36, 99, 12);
+       RectOut(0, 12, 99, 12);
+       LineOut(49, 0, 49, 47);
+
+       CircleOut(10, 42, 1);
+       CircleOut(10, 42, 2);
+   }
+   else{}
+   return Xint;
+
+}
+
+
+
+
+
+unsigned long pgcd (unsigned long z,unsigned long e )
+{
+    unsigned long c;
+    c = 0;
+    c= z % e;
+
+    if (c==0)                    //Cette fonstion fait le PGCD de deux nombre avec l'algorithme d'Euclide et le renvoit (=e).
+    {
+        return e;
+    }
+
+    else
+    {
+        while (c!=0)
+        {
+            z=e;
+            e=c;
+            c=z%e;
+        }
+        return e;
+ }
+
+}
+
+
+
+int generateur()  //Génére des nombres premiers jusqu'a une borne n en s'inspirant du crible d'Eratosthène.
+{
+    int k=0,i,j,l=0,m=1, final, tab1[400], n=250;
+
+    for (i=2;i<n;i++)
+    {
+        tab1[i]=1;      //On remplit le tableau de 1.
+    }
+
+    for (j=2;j<n;j++)
+    {                     //On place des 0 dans les cases non premières de tab1.
+        k=2;
+        while (k*j<=n)
+        {
+          tab1[k*j]=0;
+          k=k+1;
+        }
+    }
+    for (i=2;i<n;i++)
+    {
+        if (tab1[i]==1)
+        {
+           tab2[l]=i;         //On recupère dans tab2 les numéros des cases de tab1 où il reste des 1(=nombres premiers).
+           l=l+1;   //On affiche tout les nombres premiers de tab[2] successivement.
+           Wait(10);
+           ClearScreen();
+        }
+    }
+
+
+    final=  tab2[Random(l)];   //On tire au hasard un nombre premier dans tab2 que l'on affiche.
+    Wait(1000);
+
+    return  final ;           //On renvoit le nombre premier tiré au hasard.
+}
+
+
+
+
+
+unsigned long modulo (unsigned long e,unsigned long t,unsigned long n)
+{
+
+ unsigned long c=1, r=1; //Fonction qui cripte le code ASCII correpondant à la combinaison du coffre avec la clé publique
+ while (r<e+1)      //et qui renvoit le code chiffré (=c). En fait c doit être congru à t^e mod(n).
+ {
+  c=t*c;
+  c=c%n;
+  r=r+1;
+ }
+ return c;
+}
+
+
+
+task coffre()                                //Tache qui est appelée à la fin de task main. Elle ouvre le coffre
+{                                            //si le code final rentré avec les trois moteurs est correct(un moteur par chiffre).
+
+  unsigned long x=0,y=0,z=0;
+  SetSensorTouch(IN_1);                      //On reinitialise le compteur de tour de chaque moteur et définit le capteur de pression.
+  ResetRotationCount(OUT_A);
+  ResetRotationCount(OUT_B);
+  ResetRotationCount(OUT_C);
+  while(x != A || y !=B || z!=C )                   //A, B et C sont trois variables globales qui correspondent au code du coffre.
+  {                                                 //Tant que les nombres affichés sur l'écran sont différents de A, B et C,
+     while (SENSOR_1 != 1)                          //et que le détecteur de pression n'a pas été pressé, on reste dans la boucle tourne.
+     {
+                                                   //On affecte à x, y et z les valeurs qui s'affichent (pas nécessaire de les afficher sur la brique principale)
+         x = MotorRotationCount(OUT_A)/90;          //lorsque l'on tourne les moteurs. On envoit ces informations à la brique esclave (SendRemoteNumber)
+         SendRemoteNumber(BT_CONN,MAILBOX7,x);      //pour qu'elle puisse les afficher. On précise au passage la connexion prise par la briquee esclave(BT_CONN=voir macros ligne1)
+         Wait(5);                                  //et la boite au lettre (MAILBOX'')c'est à dire l'endroit où l'on envoit la valeur.
+         y = MotorRotationCount(OUT_B)/90;           //Quand on a entré les valeurs souhaitées, on presse le capteur de pression. On sort de la deuxieme boucle While.
+         SendRemoteNumber(BT_CONN,MAILBOX8,y);
+         Wait(5);
+         z = MotorRotationCount(OUT_C)/90;
+         SendRemoteNumber(BT_CONN,MAILBOX9,z);
+         Wait(5);
+
+     }
+     ClearScreen ();
+     if (x==A & y==B & z==C)                    //Apres avoir pressé le capteur, si les nombres entrés avec les moteurs correpondent aux trois
+     {                                          //nombres du code du coffre, on envoit le nombre 1 à la brique esclave qui va activer l'ouverture du coffre.
+       repeat (20)
+       {
+         SendRemoteNumber(BT_CONN,MAILBOX6,1);    //Ainsi, dans ce cas, le code etant trouvé, on sort de while(x != A || y !=B || z!=C ), puis de la tache.
+         Wait(200);                              //Sinon, si les trois nombres ne correspondent pas, la condition while(x != A || y !=B || z!=C )
+       }
+                                                //est toujours vérifiée. On revient au début cette boucle.
+     }
+     else
+     {
+
+     }
+
+     Wait(1000);
+  }
+  ClearScreen();
+  Stop(true);
+}
+
+task ecriture()                         //Cette tache affiche continuellement à l'écran des qu'elle est appelée du texte et la clé publique.
+{
+  while(true)
+  {
+    TextOut(1,55,"c1:");
+    TextOut(1,45,"c2:");
+    TextOut(1,35,"c3:");
+    TextOut(1, 20,"Cle publique:");
+    Affichage("n=",n,1,10,13,10,1);
+    Affichage("e=",e,1,1,13,1,10);
+  }
+}
+
+task main()                      //Premiere tache du programme.
+{
+   ClearScreen();
+   BTCheck(BT_CONN);            //On appelle la fonction qui vérifie la connection.
+   unsigned long q=0, p=0, z=0, d=0, c=0,c1=0, c2=0, c3=0, value=0, caract=0, tabConv[4], recom=0;
+   
+   while (true)                 //On reste indéfiniment dans la tache cle.
+   {
+      if (ButtonPressed  (BTN3,false))    //Cas ou l'on a pressé le bouton gauche (="ord" voir menu vers ligne 327)
+      {                                   //qui correpond a la generation par l'ordinateur des nombres premiers necessaire
+                                          //pour créer les clés privé et publique.
+           while (n<256)                  //On tire deux nombres premiers jusque ce que leur produit soit supérieur à 256 car il y a 256 caracteres dans la table ASCII.
+           {                              //Si n < 255, le cryptage ne sera pas bijectif.
+               q=generateur();
+               p=generateur();
+               n=p*q;                     //n est le premier consituant de notre clé privée et publique
+           }
+           break;            //suite ligne 334
+      }                      //Fin de if (ButtonPressed  (BTN3,false)
+
+      else if (ButtonPressed  (BTN2,false))           //Cas ou l'on a pressé le bouton droit (="util" voir menu vers ligne 327)
+      {                                               //qui correpond au choix de 2 nombres premiers par l'utilisateur
+           ClearScreen ();                            //nécessaire  pour créer les clés privé et publique.
+           unsigned long value = 0, tabpq[3], x=0;
+           generateur();
+           while(value<2)                             // Boucle dans laquelle on reste tant que les deux nombres premiers ne sont pas choisis.
+           {
+              if (ButtonPressed  (BTN4,false))               //Si le bouton central est pressé, cela veut dire que l'on a selectionné un nombre premier.
+              {
+                  while (true)
+                  {
+                       if (ButtonPressed  (BTN3,false))      //Si le bouton gauche est pressé, on affiche le nombre premier choisi .
+                       {                                     //Ensuite, comme on a choisi un des deux nombres premiers, on incremente
+                             tabpq[value]=caract;            //de 1 la variable value (value++). Quand value=3, on sort de la boucle while(value<3).
+                             TextOut(60, 40, Flatten(127));    //Flatten(127) affiche une coche, c'est juste pour montrer que le choix est validé.
+                             Wait (1000);                      //On garde en mémoire le nombre premier choisi dans tabpq.
+                             ClearScreen();
+                             value++;
+                             break;                             //On sort de (ButtonPressed  (BTN4,false)) pour revenir dans else ligne 297, cela jusqu'a ce que deux nombres ont été selectionnés.
+                       }
+                       else if (ButtonPressed  (BTN2,false))    //Si le bouton droit a été pressé, le choix n'est pas validé.
+                       {
+                             break;                                //On sort de (ButtonPressed  (BTN4,false)) pour revenir dans else ligne 297, cela jusqu'a ce que deux nombre ont été selectionnés.
+                       }
+                       else                                      //Tant qu'aucun des boutons n'est pas pressé, on affiche un menu proposant deux choix.
+                       {
+                             TextOut(3,50,"Etes-vous sure ?");    //Le mot oui et une fleche dessinée(GraphicOut(10,5,"fleche gauche.ric")) sur l'écran sont disposés de manière à faire comprendre
+                             NumOut(40, 40, caract);    //à l'utilisateur que pour valider son choix de nombre premier, il doit appuyer sur le bouton gauche.
+                             TextOut(3,20,"Oui");
+                             TextOut(80,20,"Non");                 //Sinon l'utilisateur peut revenir sur son choix en selectionnant non. Le mot non et une fleche dessinée(GraphicOut(82,5,"fleche droite.ric"))
+                             GraphicOut(10,5,"fleche gauche.ric"); //sur l'écran sont disposés de manière à faire comprendre à l'utilisateur que pour valider son choix, il doit appuyer sur le bouton droit.
+                             GraphicOut(82,5,"fleche droite.ric");
+                       }
+                  }
+              }
+              else
+              {
+                     tableauPremier(3, 19, 2,  value);
+                     tableauPremier(2, 19, 14, value);
+                     tableauPremier(1, 19, 26, value);
+                     caract=tableauPremier(0, 19, 38, value);
+                     tableauPremier(7, 70, 2,  value);               //Meme principe que pour tableauAscii ligne 388
+                     tableauPremier(6, 70, 14, value);
+                     tableauPremier(5, 70, 26, value);
+                     tableauPremier(4, 70, 38, value);
+                     Wait (100);
+                     ClearScreen();
+              }
+
+           }                                            //Fin de  while(value<2)
+           ClearScreen ();
+           p=tabpq[0];                                  //On nomme les deux nombres premiers choisis p et q. On les affiche.
+           q=tabpq[1];
+           Affichage("p=",p , 1, 40, 15, 40, 0);
+           Affichage("q=",q , 1, 30, 15, 30, 1000);
+           ClearScreen ();
+           n=p*q;
+           break;                                   //suite ligne 334
+      }                                             // Fin de    else if (ButtonPressed  (BTN2,false).
+        
+      else                                              //Menu qui indique quelle flèche presser en fonction du mode que l'on veut choisir
+      {                                                 //Mode ord. où c'est l'ordinateur qui génère les deux nombres premiers.
+          TextOut(20, 55, "Generer les ");            //Mode util. où c'est l'utilisateur qui choisit les deux nombres premiers.
+          TextOut(1, 45, "nombres premiers ");
+          TextOut(30, 35, "par ...");
+          TextOut(1, 20, "Ord.       Util.");
+          GraphicOut(10,5,"fleche gauche.ric");
+          GraphicOut(82,5,"fleche droite.ric");
+      }
+      
+   }
+                                                     //Quand on sort ligne 329 et ligne 260 avec break, on arrive ici.
+   ClearScreen();
+   Affichage("n=", n, 1, 50, 15, 50, 1000);
+   SendRemoteNumber(BT_CONN,MAILBOX4,n);       //On envoit n à la brique esclave qui en aura besoin comme constituant de la clé privée pour decrypter le message.
+   z=(p-1)*(q-1);                              //z est le produit des deux nombres premiers choisis auxquels on retranche 1
+   Affichage("z=", z, 1, 40, 15, 40, 1000);
+   
+   while (pgcd(z,e)!=1)                        //e est l'autre constituant de la clé publique(qui crypte). Il doit être aléatoire, <z et son pgcd avec z doit valoir 1.
+   {                                           //Tant que ce n'est pas le cas, on tire un nouveau e aléatoire (Random(z) signe nombre aléatoire compris entre 0 et z).
+      e=Random(z);
+   }
+   Affichage("e=", e, 1, 30, 15, 30, 1000);
+
+   while ((e*d)%z!=1)                          //d est le deuxieme constituant de la clé privée. Le reste de la division euclidienne
+   {                                           //du produit e*d par z doit valoir 1. d est unique.
+      d=d+1;
+   }
+   Affichage("d=", d, 1, 20, 15, 20, 1000);
+   SendRemoteNumber(BT_CONN,MAILBOX5 ,d);      //On envoit d à la brique esclave  pour décrypter le message.
+
+   value=0;
+   while(value<3)                             // Boucle dans laquelle on reste tant que les trois nombres constituant le code de notre tableau ne sont pas choisis
+   {
+      if (ButtonPressed  (BTN4,false))               //Si le bouton central est pressé, cela veut dire que l'on a selectionné un nombre(=code du coffre) dans la table ASCII.
+      {
+         while (true)
+         {
+            if (ButtonPressed  (BTN3,false))      //Si le bouton gauche est pressé(=validation du code), on affiche son equivalent ACSII.
+            {                                     //Ensuite, comme on a choisi un des trois nombres composant le code du coffre, on incremente
+               tabConv[value]=caract;            //de 1 la variable value (value++). Quand value=3, on sort de la boucle while(value<3).
+               TextOut(50, 40, Flatten(127));    //Flatten(127) affiche une coche, c'est juste pour montrer que le choix est validé.
+               Wait (1000);                      //La correspondance ascci du code choisi est rangé dans un tableau tabConv pous plus tard.
+               ClearScreen();
+               value++;
+               break;                             //On sort de (ButtonPressed  (BTN4,false)) pour revenir dans else ligne 385, cela jusqu'a ce que trois nombres ont été selectionnés.
+            }
+            else if (ButtonPressed  (BTN2,false))    //Si le bouton droit a été pressé, le choix n'est pas validé.
+            {
+               break;                                //On sort de (ButtonPressed  (BTN4,false)) pour revenir dans else ligne 385, cela jusqu'a ce que trois nombre ont été selectionnés.
+            }
+            else                                      //Tant qu'aucun des boutons n'est pressé, on affiche un menu proposant deux choix.
+            {                                         //Soit on accepte le nombre selectionné dans la table ascii précédemment qui sera un des trois code de notre coffre(=oui)
+            TextOut(3,50,"Etes-vous sure ?");    //Le mot oui et une fleche dessinée(GraphicOut(10,5,"fleche gauche.ric")) sur l'écran sont disposés de manière à faire comprendre
+            TextOut(40, 40, Flatten(caract));    //à l'utilisateur que pour valider son choix, il doit appuyer sur le bouton gauche.
+            TextOut(3,20,"Oui");
+            TextOut(80,20,"Non");                 //Sinon l'utilisateur peut revenir sur son choix en selectionnant non. Le mot non et une fleche dessinée(GraphicOut(82,5,"fleche droite.ric"))
+            GraphicOut(10,5,"fleche gauche.ric"); //sur l'écran sont disposés de manière à faire comprendre à l'utilisateur que pour valider son choix, il doit appuyer sur le bouton droit.
+            GraphicOut(82,5,"fleche droite.ric");
+            }
+         }
+      }
+
+      else                                                // On affiche à l'écran la table déroulante des caracteres ascii et de leur correspondance
+      {                                                     // tant que les trois nombres formant le code du coffre n'ont pas été choisis.
+         tableauAscii(46, 2, value);                        //On appelle 4 fois de suite la fonction caractere ascii.
+         tableauAscii(47, 14, value);                       //Chacune de ces 4 lignes affiche un nombre et sa correspondance à l'écran.
+         tableauAscii(48, 26, value);                       //Les parametres de la fonction sont : le nombre de départ affiché (ex=48), la ligne d'affichage(ex=26)
+         caract=tableauAscii(49, 38, value);                //et value qui peut valoir 1, 2 ou 3(voir explication plus haut dans la fontion tableauAscii).
+                                                               //Le caractere le plus haut (ligne d'affichage=38) est le caractere encadré que l'on choisit
+         Wait (100);                                        //comme étant un d'un code de notre coffre(si l'on valide oui evidemment).
+         ClearScreen();
+      }
+
+   }                                                   //Quend on a choisi les trois codes, on sort de la boucle while(value<3).
+
+   ClearScreen();
+   A=StrToNum(Flatten(tabConv[0]));                    //On recupère les trois codes du coffres rentrés plus haut en deux étapes:
+   B=StrToNum(Flatten(tabConv[1]));                    //-avec Flatten on transforme le code ascii en sa correspondance(=code du coffre).
+   C=StrToNum(Flatten(tabConv[2]));                    //-avec StrToNum on transforme notre code en nombre.
+   
+   start ecriture;
+   start coffre;
+   until (ButtonPressed  (BTN4,true))    //Tant que le bouton central n'est pas pressé, on reste sur ce menu qui affiche simultanement la question "Chiffrer?" et les nombres à chiffrer.
+   {
+       NumOut(20,55,A);
+       NumOut(20,45,B);
+       NumOut(20,35,C);
+       TextOut(26,55,"/");
+       TextOut(26,45,"/");
+       TextOut(26,35,"/");
+       NumOut(31,55,tabConv[0]);
+       NumOut(31,45,tabConv[1]);
+       NumOut(31,35,tabConv[2]);
+       Wait(400);
+       ClearScreen();
+       TextOut(20, 55, "Chiffrer");
+       TextOut(80, 55, "?");
+       TextOut(20, 45, "Chiffrer");
+       TextOut(80, 45, "?");
+       TextOut(20, 35, "Chiffrer");
+       TextOut(80, 35, "?");
+       Wait(400);
+       ClearScreen();
+   }
+
+                                                       // A, B et C sont des variables globales qui contiennent les trois codes de notre coffre
+   c1=modulo(e,tabConv[0],n);                          //On chiffre (=crypte) nos trois codes (au lieu de tabConv[""] on aurait pu prendre A, B ou C crées precedemment)
+   c2=modulo(e,tabConv[1],n);                          //à l'aide de la fonction modulo (voir plus haut) en envoyant aussi la clé publique(e et n) necessaire pour le chiffrage.
+   c3=modulo(e,tabConv[2],n);
+                                                       //c1, c2 et c3 prenent les codes du coffre chiffrés.
+                                                     //On lance la tache coffre
+
+   
+   while (true)
+   {
+     SendRemoteNumber(BT_CONN,MAILBOX1,c1);
+     Wait(10);
+     SendRemoteNumber(BT_CONN,MAILBOX2,c2);
+     Wait(10);
+     SendRemoteNumber(BT_CONN,MAILBOX3,c3);
+     Wait(10);                                        //On envoit à la brique esclave c1, c2 et c3 pour qu'elle puisse les decrypter par la suite au moyen de sa clé privée(n et d)
+     NumOut(20,55,c1);                                                            //On affiche les codes chiffrés.
+     NumOut(20,45,c2);
+     NumOut(20,35,c3);
+
+   }
+
+}
+
